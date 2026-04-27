@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rice Tracker - 現代米粒風工作追蹤</title>
+    <style>
+        :root {
+            --bg-color: #fdfbf7;      /* 米粒底色 */
+            --primary-blue: #5b9bd5;  /* 現代淺藍 */
+            --text-color: #4a4e69;
+            --card-bg: #ffffff;
+            --border-color: #eef2f6;
+            --prio-p0: #ef5350;
+            --prio-p1: #ff9800;
+            --prio-p2: #2196f3;
+        }
+
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0; padding: 20px;
+            display: flex; justify-content: center;
+        }
+
+        .app-container { width: 100%; max-width: 900px; }
+
+        /* Header */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding-bottom: 20px; border-bottom: 2px solid #d1e3f8; margin-bottom: 30px;
+        }
+        h1 { margin: 0; color: var(--primary-blue); font-size: 1.6rem; }
+
+        /* Input Section */
+        .input-group {
+            background: var(--card-bg);
+            padding: 20px; border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            margin-bottom: 30px; display: flex; gap: 10px; flex-wrap: wrap;
+        }
+        input, select {
+            padding: 10px; border: 1px solid var(--border-color);
+            border-radius: 8px; outline: none; font-size: 0.9rem;
+        }
+        input[type="text"] { flex: 2; min-width: 200px; }
+        .add-btn {
+            background: var(--primary-blue); color: white; border: none;
+            padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;
+        }
+        .add-btn:hover { opacity: 0.9; }
+
+        /* Task Table */
+        .task-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+        th { text-align: left; padding: 0 15px; color: #9eb3c2; font-size: 0.85rem; }
+        .task-row td {
+            background: var(--card-bg); padding: 15px;
+            border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);
+        }
+        .task-row td:first-child { border-left: 1px solid var(--border-color); border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+        .task-row td:last-child { border-right: 1px solid var(--border-color); border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+
+        /* Status & Badges */
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
+        .bg-p0 { background: #ffebee; color: var(--prio-p0); }
+        .bg-p1 { background: #fff3e0; color: var(--prio-p1); }
+        .bg-p2 { background: #e3f2fd; color: var(--prio-p2); }
+
+        .completed { opacity: 0.5; text-decoration: line-through; }
+        
+        .delete-btn {
+            color: #ccc; cursor: pointer; font-size: 0.8rem; margin-left: 10px;
+        }
+        .delete-btn:hover { color: var(--prio-p0); }
+
+        .checkbox { cursor: pointer; width: 18px; height: 18px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>Rice Tracker <small style="font-weight: 300;">| 工作追蹤</small></h1>
+        <div id="today-date" style="color: #9eb3c2; font-size: 0.85rem;"></div>
+    </header>
+
+    <div class="input-group">
+        <input type="text" id="task-name" placeholder="輸入任務內容或歸納...">
+        <select id="task-prio">
+            <option value="p0">P0 緊急</option>
+            <option value="p1">P1 重要</option>
+            <option value="p2">P2 常規</option>
+        </select>
+        <input type="date" id="task-date">
+        <button class="add-btn" onclick="addTask()">新增</button>
+    </div>
+
+    <table class="task-table">
+        <thead>
+            <tr>
+                <th width="40"></th>
+                <th width="100">優先度</th>
+                <th>任務內容</th>
+                <th>截止日期</th>
+                <th width="60">操作</th>
+            </tr>
+        </thead>
+        <tbody id="task-list">
+            </tbody>
+    </table>
+</div>
+
+<script>
+    // 1. 初始化日期
+    document.getElementById('today-date').innerText = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+
+    // 2. 從 LocalStorage 讀取資料
+    let tasks = JSON.parse(localStorage.getItem('myTasks')) || [];
+
+    function saveAndRender() {
+        localStorage.setItem('myTasks', JSON.stringify(tasks));
+        renderTasks();
+    }
+
+    // 3. 新增任務
+    function addTask() {
+        const name = document.getElementById('task-name').value;
+        const prio = document.getElementById('task-prio').value;
+        const date = document.getElementById('task-date').value;
+
+        if (!name) return alert("請輸入內容！");
+
+        tasks.push({
+            id: Date.now(),
+            name: name,
+            prio: prio,
+            date: date || '未定',
+            completed: false
+        });
+
+        document.getElementById('task-name').value = '';
+        saveAndRender();
+    }
+
+    // 4. 切換完成狀態
+    function toggleTask(id) {
+        tasks = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+        saveAndRender();
+    }
+
+    // 5. 刪除任務
+    function deleteTask(id) {
+        tasks = tasks.filter(t => t.id !== id);
+        saveAndRender();
+    }
+
+    // 6. 渲染畫面
+    function renderTasks() {
+        const list = document.getElementById('task-list');
+        list.innerHTML = '';
+
+        tasks.forEach(t => {
+            const row = document.createElement('tr');
+            row.className = `task-row ${t.completed ? 'completed' : ''}`;
+            
+            row.innerHTML = `
+                <td><input type="checkbox" class="checkbox" ${t.completed ? 'checked' : ''} onclick="toggleTask(${t.id})"></td>
+                <td><span class="badge bg-${t.prio}">${t.prio.toUpperCase()}</span></td>
+                <td><strong>${t.name}</strong></td>
+                <td>${t.date}</td>
+                <td><span class="delete-btn" onclick="deleteTask(${t.id})">刪除</span></td>
+            `;
+            list.appendChild(row);
+        });
+    }
+
+    // 初始渲染
+    renderTasks();
+</script>
+
+</body>
+</html>
